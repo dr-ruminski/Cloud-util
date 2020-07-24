@@ -3,6 +3,8 @@ package com.dr.gcp.compute.vm.manager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,11 +20,12 @@ import com.google.gson.Gson;
  * @author dr
  *
  */
-public class VMManager implements IVMManager {
+public class VMManager extends Manager implements IVMManager {
 
 	private static final Logger LOG = LogManager.getLogger();
 
-	private GCPComputeVModel[] model;
+	private List<GCPComputeVModel> vms = new ArrayList<>();
+	private GCPComputeVModel currVM = null;
 
 	public VMManager() {
 		LOG.debug("Virtual Machine Manager has started. Retrieving GCE instances data.");
@@ -38,11 +41,17 @@ public class VMManager implements IVMManager {
 			String in = null;
 			StringBuilder input = new StringBuilder();
 			while ((in = stdInput.readLine()) != null) {
-				input.append(in);
+				input.append(in).append('\n');
 			}
+			LOG.trace(input);
 
 			Gson gson = new Gson();
-			model = gson.fromJson(input.toString(), GCPComputeVModel[].class);
+			GCPComputeVModel[] model = gson.fromJson(input.toString(), GCPComputeVModel[].class);
+			
+			// rewriting into dynamic arraylist
+			for (GCPComputeVModel vm : model) 
+				vms.add(vm);
+			
 
 			StringBuilder errorInput = new StringBuilder();
 			// read any errors from the attempted command
@@ -71,8 +80,14 @@ public class VMManager implements IVMManager {
 
 	@Override
 	public void stopInstance(String name) {
-		// TODO Auto-generated method stub
-
+		if (name == null) {
+			LOG.info("Cannot stop vm with a name: {}",name);
+			return;
+		}
+		
+		execute(LOG, GcloudCommands.STOP_INSTANCE + name + " --zone="+currVM.getZone());
+		
+		
 	}
 
 	@Override
@@ -83,54 +98,36 @@ public class VMManager implements IVMManager {
 
 	@Override
 	public void startRandomInstance() {
-		if (model == null || model.length == 0)
+		if (vms.size() == 0)
 			return;
 		
-		int numberOfVMs = model.length;
+		int numberOfVMs = vms.size()-1;
 		Random rand = new Random();
 		int id = rand.nextInt(numberOfVMs);
 		
-		LOG.info("Starting: {}", model[id].getName());
-		execute(GcloudCommands.START_INSTANCE + model[id].getName() +" --zone="+model[id].getZone());
+		GCPComputeVModel vm = vms.remove(id);
+		
+		LOG.info("Starting: {}", vms.get(id).getName());
+		String json = execute(LOG, GcloudCommands.START_INSTANCE + vm.getName() +" --zone="+vm.getZone() +" --format=json");
+		LOG.trace("Running machine json: {}", json);
+		
+		Gson gson = new Gson();
+		GCPComputeVModel[] model = gson.fromJson(json, GCPComputeVModel[].class);
+		
+		this.currVM = model[0];
 		
 		
 	}
 
 	@Override
 	public void stopRandomInstance() {
-		// TODO Auto-generated method stub
 
 	}
 	
-	private void execute(String command) {
-		try {
-			Process process = Runtime.getRuntime().exec(command);
-
-			// reads I/O of the gcloud tool
-			BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-			// read the output from the command
-			String in = null;
-			StringBuilder input = new StringBuilder();
-			while ((in = stdInput.readLine()) != null) {
-				input.append(in);
-			}
-			LOG.debug(input);
-			
-			StringBuilder errorInput = new StringBuilder();
-			// read any errors from the attempted command
-			while ((in = stdError.readLine()) != null) {
-				errorInput.append(in);
-			}
-
-			if (errorInput.length() > 0) {
-				LOG.error(errorInput.toString());
-			}
-
-		} catch (IOException e) {
-			LOG.error(e);
-		}
+	public GCPComputeVModel getCurrentVM() {
+		return currVM;
 	}
+	
+
 
 }
