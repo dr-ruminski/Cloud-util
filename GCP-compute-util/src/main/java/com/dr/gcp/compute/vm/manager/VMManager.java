@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -21,8 +23,9 @@ import com.google.gson.Gson;
  * <li>start a GCE instance by providing a name of vm,</li>
  * <li>stop a GCE instance by providing a name of vm,</li>
  * <li>start all GCE instances,</li>
+ * <li>stop all GCE instances,</li>
  * <li>start randomly selected a GCE instance,</li>
- * <li>start randomly selected a GCE instance.</li>
+ * <li>stop randomly selected a GCE instance.</li>
  * </ul>
  * 
  * @author Dariusz Rumiński
@@ -35,6 +38,9 @@ public class VMManager extends Manager implements IVMManager {
 
 	// a list of GCE virtual machines
 	private List<GCPComputeVModel> vms = new ArrayList<>();
+	
+	// maps vm name to its model
+	Map<String, GCPComputeVModel> vmsMap = new HashMap<String, GCPComputeVModel>();
 	
 	// current virtual machine that is managed by a VMManager instance
 	private GCPComputeVModel currVM = null;
@@ -62,8 +68,10 @@ public class VMManager extends Manager implements IVMManager {
 			GCPComputeVModel[] model = gson.fromJson(output.toString(), GCPComputeVModel[].class);
 
 			// rewriting into dynamic arraylist
-			for (GCPComputeVModel vm : model)
+			for (GCPComputeVModel vm : model) {
 				vms.add(vm);
+				vmsMap.put(vm.getName(), vm);
+			}
 
 			StringBuilder errorInput = new StringBuilder();
 			// read any errors from the attempted command
@@ -85,27 +93,59 @@ public class VMManager extends Manager implements IVMManager {
 
 	@Override
 	public void startInstance(String name) {
-		if (name == null)
+		if (name == null || name.isEmpty()) {
+			LOG.error("A name of vm cannot be null or empty. Cannot start vm with the following name: {}", name);
 			return;
-		// @todo
+		}
+		
+		if (!vmsMap.containsKey(name)) {
+			LOG.error("Wrong vm name {}. Double check spelling etc.", name);
+			return;
+		}
+		
+		GCPComputeVModel vm = vmsMap.get(name);
+		
+		LOG.info("Starting: {}", name);
+
+		StringBuilder cmd = new StringBuilder();
+		cmd.append(GcloudCommands.START_INSTANCE).append(name).append(" --zone=").append(vm.getZone())
+				.append(" --format=json");
+
+		LOG.debug("Executing: {}", cmd);
+		String jsonResponse = execute(LOG, cmd.toString());
+		
+		LOG.trace("Running machine json: {}", jsonResponse);
+		Gson gson = new Gson();
+		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
+
+		vms.add(model[0]);
+		currVM = model[0];		
 	}
 
 	@Override
 	public void stopInstance(String name) {
-		if (name == null) {
-			LOG.info("Cannot stop vm with a name: {}", name);
+		if (name == null || name.isEmpty()) {
+			LOG.error("A name of vm cannot be null or empty. Cannot stop vm with the following name: {}", name);
 			return;
 		}
+		StringBuilder cmd = new StringBuilder();
+		cmd.append(GcloudCommands.STOP_INSTANCE).append(name).append(" --zone=").append(currVM.getZone());
 
-		execute(LOG, GcloudCommands.STOP_INSTANCE + name + " --zone=" + currVM.getZone());
+		execute(LOG, cmd.toString());
 
 	}
 
 	@Override
 	public void startAllInstance() {
-		// TODO Auto-generated method stub
-
+		for (GCPComputeVModel vm : vms)
+			startInstance(vm.getName());
 	}
+	
+	@Override
+	public void stopAllInstance() {
+		for (GCPComputeVModel vm : vms)
+			stopInstance(vm.getName());
+	}	
 
 	@Override
 	public void startRandomInstance() {
@@ -131,7 +171,8 @@ public class VMManager extends Manager implements IVMManager {
 		Gson gson = new Gson();
 		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
 
-		this.currVM = model[0];
+		vms.add(model[0]);
+		currVM = model[0];
 
 	}
 
@@ -143,5 +184,7 @@ public class VMManager extends Manager implements IVMManager {
 	public GCPComputeVModel getCurrentVM() {
 		return currVM;
 	}
+
+
 
 }
