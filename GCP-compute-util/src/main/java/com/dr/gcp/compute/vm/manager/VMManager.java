@@ -72,7 +72,7 @@ public class VMManager extends Manager implements IVMManager {
 			}
 
 			if (errorInput.length() > 0) {
-				LOG.error(errorInput.toString());
+				LOG.info(errorInput.toString());
 				System.exit(-1);
 			}
 
