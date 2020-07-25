@@ -3,7 +3,7 @@ Google Cloud Patform Compute utility is a lightweight java framework for managin
 ```
 gcloud compute instance *
 ```
-where * can means further parameters such as: start, stop, list, name of vm, --zone, --format etc.
+where * can mean further parameters such as: start, stop, list, name of vm, --zone, --format etc.
 
 
 With the use of GCP-compute-util you can:
@@ -61,6 +61,9 @@ You can check the result via GCP web console.
     <br>Fig.1 - GCP web console view.
 </p>  
 
+## Where do I start?
+Please see the following demo application: <br>
+https://github.com/dr-ruminski/GCP-compute-util/blob/master/GCP-compute-util/src/main/java/com/dr/gcp/App.java
 
 
 
