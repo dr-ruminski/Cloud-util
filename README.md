@@ -57,7 +57,7 @@ Instance external IP is 32.125.85.16
 ```
 You can check the result via GCP web console.
 <p align="center">
-    <img height="300" src="/Figures/gcp-console-example.png?raw=true">
+    <img height="250" src="/Figures/gcp-console-example.png?raw=true">
     <br>Fig.1 - GCP web console view.
 </p>  
 
