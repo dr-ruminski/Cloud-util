@@ -5,18 +5,16 @@
 			<PatternLayout
 				pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
 		</Console>
-		<File name="MyFile" fileName="logs/app.log">
-			<PatternLayout>
-				<Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
-			</PatternLayout>
+		<File name="LogFile" fileName="logs/app.log">
+			<PatternLayout
+				pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
 		</File>
 	</Appenders>
 	<Loggers>
-		<Logger name="com.dr.gcp" level="DEBUG" />
+		<Logger name="com.dr.gcp" level="Debug" />
 		<Root level="error">
 			<AppenderRef ref="Console" />
-
+			<AppenderRef ref="LogFile" />
 		</Root>
 	</Loggers>
-
 </Configuration>
