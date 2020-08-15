@@ -65,5 +65,9 @@ You can check the result via GCP web console.
 Please see the following demo application: <br>
 https://github.com/dr-ruminski/GCP-compute-util/blob/master/GCP-compute-util/src/main/java/com/dr/gcp/App.java
 
+## Literature
+[1] Compute Engine documentation - https://cloud.google.com/compute/docs/ <br/>
+[2] gcloud compute console tool - https://cloud.google.com/compute/docs/gcloud-compute <br/>
+[3] Compute Engine APIs - https://cloud.google.com/compute/docs/reference/rest/v1
 
 
