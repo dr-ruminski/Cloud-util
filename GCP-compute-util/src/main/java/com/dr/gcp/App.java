@@ -1,5 +1,6 @@
 package com.dr.gcp;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
@@ -12,7 +13,7 @@ import com.dr.gcp.compute.vm.manager.VMManager;
  */
 public class App {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
 		// apache log4j for this demo
 		Logger log = LogManager.getLogger();
