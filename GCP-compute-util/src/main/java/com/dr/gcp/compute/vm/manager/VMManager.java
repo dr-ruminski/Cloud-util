@@ -1,13 +1,11 @@
 package com.dr.gcp.compute.vm.manager;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,58 +29,22 @@ import com.google.gson.Gson;
  * @author Dariusz Rumiński
  *
  */
-public class VMManager extends Manager implements IVMManager {
+public class VMManager extends Manager<GCPComputeVModel> {
 
 	// apache log4j logger
 	private static final Logger LOG = LogManager.getLogger();
 
-	// a list of GCE virtual machines
-	private List<GCPComputeVModel> vms = new ArrayList<>();
-	
-	// maps vm name to its model
-	Map<String, GCPComputeVModel> vmsMap = new HashMap<String, GCPComputeVModel>();
-	
-	// current virtual machine that is managed by a VMManager instance
-	private GCPComputeVModel currVM = null;
 
 	// main constructor
 	public VMManager() {
 		LOG.debug("Virtual Machine Manager has started. Retrieving GCE instances data.");
 
 		try {
-			Process process = Runtime.getRuntime().exec(GcloudCommands.LIST_INSTANCES);
-
-			// reads I/O of the gcloud tool
-			BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-			// read the output from the command
-			String out = null;
-			StringBuilder output = new StringBuilder();
-			while ((out = stdInput.readLine()) != null) {
-				output.append(out).append('\n');
-			}
-			LOG.trace(output);
-
+			String jsonStr = execute(LOG, GcloudCommands.LIST_INSTANCES);
 			Gson gson = new Gson();
-			GCPComputeVModel[] model = gson.fromJson(output.toString(), GCPComputeVModel[].class);
-
-			// rewriting into dynamic arraylist
-			for (GCPComputeVModel vm : model) {
-				vms.add(vm);
-				vmsMap.put(vm.getName(), vm);
-			}
-
-			StringBuilder errorInput = new StringBuilder();
-			// read any errors from the attempted command
-			while ((out = stdError.readLine()) != null) {
-				errorInput.append(out);
-			}
-
-			if (errorInput.length() > 0) {
-				LOG.info(errorInput.toString());
-				System.exit(-1);
-			}
+			GCPComputeVModel[] model = gson.fromJson(jsonStr.toString(), GCPComputeVModel[].class);
+			List<GCPComputeVModel> list = Arrays.asList(model);
+			vmsMap = list.stream().collect(Collectors.groupingBy(GCPComputeVModel::getName));
 
 		} catch (IOException e) {
 			LOG.error(e);
@@ -92,19 +54,19 @@ public class VMManager extends Manager implements IVMManager {
 	}
 
 	@Override
-	public void startInstance(String name) {
+	public void startInstance(String name) throws IOException {
 		if (name == null || name.isEmpty()) {
 			LOG.error("A name of vm cannot be null or empty. Cannot start vm with the following name: {}", name);
 			return;
 		}
-		
+
 		if (!vmsMap.containsKey(name)) {
 			LOG.error("Wrong vm name {}. Double check spelling etc.", name);
 			return;
 		}
-		
-		GCPComputeVModel vm = vmsMap.get(name);
-		
+
+		GCPComputeVModel vm = vmsMap.get(name).get(0);
+
 		LOG.info("Starting: {}", name);
 
 		StringBuilder cmd = new StringBuilder();
@@ -113,17 +75,16 @@ public class VMManager extends Manager implements IVMManager {
 
 		LOG.debug("Executing: {}", cmd);
 		String jsonResponse = execute(LOG, cmd.toString());
-		
+
 		LOG.trace("Running machine json: {}", jsonResponse);
 		Gson gson = new Gson();
 		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
 
-		vms.add(model[0]);
-		currVM = model[0];		
+		currVM = model[0];
 	}
 
 	@Override
-	public void stopInstance(String name) {
+	public void stopInstance(String name) throws IOException {
 		if (name == null || name.isEmpty()) {
 			LOG.error("A name of vm cannot be null or empty. Cannot stop vm with the following name: {}", name);
 			return;
@@ -136,29 +97,28 @@ public class VMManager extends Manager implements IVMManager {
 	}
 
 	@Override
-	public void startAllInstance() {
-		for (GCPComputeVModel vm : vms)
-			startInstance(vm.getName());
+	public void startAllInstance() throws IOException {
+		for (String vmName : vmsMap.keySet())
+			startInstance(vmName);
 	}
-	
-	@Override
-	public void stopAllInstance() {
-		for (GCPComputeVModel vm : vms)
-			stopInstance(vm.getName());
-	}	
 
 	@Override
-	public void startRandomInstance() {
-		if (vms.size() == 0)
+	public void stopAllInstance() throws IOException {
+		for (String vmName : vmsMap.keySet())
+			stopInstance(vmName);
+	}
+
+	@Override
+	public void startRandomInstance() throws IOException {
+		if (vmsMap.size() == 0)
 			return;
 
-		int numberOfVMs = vms.size() - 1;
-		Random rand = new Random();
-		int id = rand.nextInt(numberOfVMs);
+		List<List<GCPComputeVModel>> listOfVms = new ArrayList<>(vmsMap.values());
+		Collections.shuffle( listOfVms );
+		
+		GCPComputeVModel vm = listOfVms.get(0).get(0);
 
-		GCPComputeVModel vm = vms.remove(id);
-
-		LOG.info("Starting: {}", vms.get(id).getName());
+		LOG.info("Starting: {}", vm.getName());
 
 		StringBuilder cmd = new StringBuilder();
 		cmd.append(GcloudCommands.START_INSTANCE).append(vm.getName()).append(" --zone=").append(vm.getZone())
@@ -166,25 +126,26 @@ public class VMManager extends Manager implements IVMManager {
 
 		LOG.debug("Executing: {}", cmd);
 		String jsonResponse = execute(LOG, cmd.toString());
-		
+
 		LOG.trace("Running machine json: {}", jsonResponse);
 		Gson gson = new Gson();
 		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
 
-		vms.add(model[0]);
 		currVM = model[0];
+		
+		// updates map with new data
+		vmsMap.remove(currVM.getName());
+		vmsMap.put(currVM.getName(), Arrays.asList(currVM));
 
 	}
 
 	@Override
-	public void stopRandomInstance() {
+	public void stopRandomInstance() throws IOException {
 		stopInstance(currVM.getName());
 	}
 
 	public GCPComputeVModel getCurrentVM() {
 		return currVM;
 	}
-
-
 
 }
