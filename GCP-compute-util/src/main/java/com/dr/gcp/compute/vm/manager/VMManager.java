@@ -8,9 +8,10 @@ import java.io.IOException;
  * Currently is used by {@link GCEManager} in context of Google Cloud.
  * 
  * @author Dariusz Rumiński
+ * @param <T>
  *
  */
-public interface VMManager {
+public interface VMManager<T> {
 
 	/**
 	 * Starts virtual machine.
@@ -45,5 +46,7 @@ public interface VMManager {
 	 * Stops randomly selected GCE instance.
 	 */
 	void stopRandomInstance() throws IOException;
+	
+	T getCurrentVM();
 
 }

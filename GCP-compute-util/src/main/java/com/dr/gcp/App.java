@@ -6,7 +6,9 @@ import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.dr.gcp.compute.vm.manager.GCEManager;
 import com.dr.gcp.compute.vm.manager.VMManager;
+import com.dr.gcp.compute.vm.model.GCPComputeVModel;
 
 /**
  * Test app that demonstrates a small subset of the VM manager functionality.
@@ -19,7 +21,7 @@ public class App {
 		Logger log = LogManager.getLogger();
 		
 		// initialize a VM Manager instance
-		VMManager vmManager = new VMManager();
+		VMManager<GCPComputeVModel> vmManager = new GCEManager();
 		
 		// starts randomly selected GCE instance
 		vmManager.startRandomInstance();

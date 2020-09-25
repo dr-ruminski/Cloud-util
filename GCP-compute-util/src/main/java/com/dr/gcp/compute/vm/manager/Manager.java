@@ -7,48 +7,60 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dr.gcp.compute.vm.model.GCPComputeVModel;
-
-public abstract class Manager<T> implements IVMManager {
+// TODO: document class and the execute method
+public abstract class Manager<T> implements VMManager<T> {
 
 	// maps vm name to its model
 	protected Map<String, List<T>> vmsMap = new HashMap<String, List<T>>();
 	
 	// current virtual machine that is managed by a VMManager instance
-	protected GCPComputeVModel currVM = null;
+	protected T currentVM;
+	
+	private static final Logger LOG = LogManager.getLogger(Manager.class);
 
-	// 
-	protected String execute(Logger log, String command) throws IOException {
-		Process process = Runtime.getRuntime().exec(command);
-		// reads I/O of the gcloud tool
-		BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-		BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+	
+	protected String execute(String command) throws IOException {
+		
+		// here we attempt to run gcloud command using os shell
+		Process gcloudProcess = Runtime.getRuntime().exec(command);
+		
+		//  I/O of the gcloud * command
+		BufferedReader stdOutput = new BufferedReader(new InputStreamReader(gcloudProcess.getInputStream()));
+		BufferedReader stdErrorOutput = new BufferedReader(new InputStreamReader(gcloudProcess.getErrorStream()));
 
-		// read the output from the command
-		String in = null;
-		StringBuilder input = new StringBuilder();
-		while ((in = stdInput.readLine()) != null) {
-			input.append(in).append('\n');
-		}
-		if (input.length() > 0)
-			log.trace(input);
-
-		StringBuilder errorInput = new StringBuilder();
-		// read any errors from the attempted command
-		while ((in = stdError.readLine()) != null) {
-			errorInput.append(in).append('\n');
-		}
-
-		if (errorInput.length() > 0)
-			log.error(errorInput.toString());
+		StringBuilder processOutMsg = readProcessIOStream(stdOutput);
+		if (processOutMsg.length() > 0)
+			LOG.trace(processOutMsg);
+			
+		StringBuilder processErrOutMsg = readProcessIOStream(stdErrorOutput);
+		if (processErrOutMsg.length() > 0)
+			LOG.error(processErrOutMsg);
 
 		// cleaning resources and killing the process 
-		stdInput.close();
-		stdError.close();
-		process.destroy();
+		stdOutput.close();
+		stdErrorOutput.close();
+		gcloudProcess.destroy();
 		
-		return input.toString();
+		return processOutMsg.toString();
 	}
+
+	@Override
+	public T getCurrentVM() {
+		return currentVM;
+	}
+	
+	private StringBuilder readProcessIOStream(BufferedReader stdOut) throws IOException {
+		String output;
+		StringBuilder outputMessage = new StringBuilder();
+		while ((output = stdOut.readLine()) != null) 
+			outputMessage
+				.append(output)
+				.append('\n');
+		
+		return outputMessage;
+	}
+	
 }
