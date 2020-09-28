@@ -33,9 +33,9 @@ and transforms GCE json into managable data model - a map of GCPComputeVModel.
 ## Demo
 The following example presents starting randomly selected virtual machine running within Google Cloud Platfrom.
 ```
-// initialize a VM Manager instance
-VMManager vmManager = new VMManager();
-		
+// initialize a VM Manager instance (in the following example an implementation of Google Cloud Engine Manager).
+VMManager<GCPComputeVModel> vmManager = new GCEManager();
+				
 // starts randomly selected GCE instance
 vmManager.startRandomInstance();
 		
