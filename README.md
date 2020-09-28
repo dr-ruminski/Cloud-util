@@ -19,10 +19,10 @@ With the use of GCP-compute-util you can:
 A list of functions will be continuously extended. 
 
 ## Virtual Machine Manager
-To start working with GCP-compute-util an instance of the VMManager class is required. VMManager retrieves data of virtual
-machines and fills up the main data model of GCE compute machines.
+To start working with GCP-compute-util an instance of the VMManager type is required. VMManager retrieves data of virtual
+machines and fills up the main data model (GCPComputeVModel).
 ```
-VMManager vmManager = new VMManager();
+VMManager<GCPComputeVModel> vmManager = new GCEManager();
 ```
 Under the hood the constructor exectues:
 ```
