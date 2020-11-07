@@ -1,4 +1,4 @@
-package com.dr.gcp.compute.vm.manager;
+package com.dr.gcp.compute.manager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dr.gcp.compute.vm.model.GCPComputeVModel;
+import com.dr.cloud.manager.Manager;
+import com.dr.gcp.compute.model.GCPComputeVModel;
 import com.google.gson.Gson;
 
 /**

@@ -1,6 +1,7 @@
-package com.dr.gcp.compute.vm.manager;
+package com.dr.cloud.manager;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -15,52 +16,59 @@ public abstract class Manager<T> implements VMManager<T> {
 
 	// maps vm name to its model
 	protected Map<String, List<T>> vmsMap = new HashMap<String, List<T>>();
-	
+
 	// current virtual machine that is managed by a VMManager instance
 	protected T currentVM;
-	
+
+	// logger
 	private static final Logger LOG = LogManager.getLogger(Manager.class);
 
-	
 	protected String execute(String command) throws IOException {
-		
+
 		// here we attempt to run gcloud command using os shell
-		Process gcloudProcess = Runtime.getRuntime().exec(command);
-		
-		//  I/O of the gcloud * command
+		Process gcloudProcess = Runtime.getRuntime().exec(buildCloudCommand(command));
+//		Process gcloudProcess = Runtime.getRuntime().exec(new String[] {"/bin/bash", "-c", "export"});
+
+		// I/O of the gcloud * command
 		BufferedReader stdOutput = new BufferedReader(new InputStreamReader(gcloudProcess.getInputStream()));
 		BufferedReader stdErrorOutput = new BufferedReader(new InputStreamReader(gcloudProcess.getErrorStream()));
 
 		StringBuilder processOutMsg = readProcessIOStream(stdOutput);
 		if (processOutMsg.length() > 0)
-			LOG.trace(processOutMsg);
-			
+			LOG.debug(processOutMsg);
+
 		StringBuilder processErrOutMsg = readProcessIOStream(stdErrorOutput);
 		if (processErrOutMsg.length() > 0)
 			LOG.error(processErrOutMsg);
 
-		// cleaning resources and killing the process 
+		// cleaning resources and killing the process
 		stdOutput.close();
 		stdErrorOutput.close();
 		gcloudProcess.destroy();
-		
+
 		return processOutMsg.toString();
+	}
+
+	private String buildCloudCommand(String command) {
+		StringBuilder cloudCmd = new StringBuilder();
+		cloudCmd
+			.append(PropertiesUtil.getInstance().getGceSdkPath())
+			.append(File.separatorChar)
+			.append(command);
+		return cloudCmd.toString();
+	}
+
+	private StringBuilder readProcessIOStream(BufferedReader stdOut) throws IOException {
+		String output;
+		StringBuilder outputMessage = new StringBuilder();
+		while ((output = stdOut.readLine()) != null)
+			outputMessage.append(output).append('\n');
+
+		return outputMessage;
 	}
 
 	@Override
 	public T getCurrentVM() {
 		return currentVM;
 	}
-	
-	private StringBuilder readProcessIOStream(BufferedReader stdOut) throws IOException {
-		String output;
-		StringBuilder outputMessage = new StringBuilder();
-		while ((output = stdOut.readLine()) != null) 
-			outputMessage
-				.append(output)
-				.append('\n');
-		
-		return outputMessage;
-	}
-	
 }

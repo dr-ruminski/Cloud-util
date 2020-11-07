@@ -6,9 +6,9 @@ import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dr.gcp.compute.vm.manager.GCEManager;
-import com.dr.gcp.compute.vm.manager.VMManager;
-import com.dr.gcp.compute.vm.model.GCPComputeVModel;
+import com.dr.cloud.manager.VMManager;
+import com.dr.gcp.compute.manager.GCEManager;
+import com.dr.gcp.compute.model.GCPComputeVModel;
 
 /**
  * Test app that demonstrates a small subset of the VM manager functionality.

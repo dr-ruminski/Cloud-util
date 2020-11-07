@@ -11,8 +11,8 @@
 		</File>
 	</Appenders>
 	<Loggers>
-		<Logger name="com.dr.gcp" level="Debug" />
-		<Root level="error">
+		<Logger name="com.dr.gcp" />
+		<Root level="trace">
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="LogFile" />
 		</Root>

@@ -1,5 +1,5 @@
 
-package com.dr.gcp.compute.vm.model;
+package com.dr.gcp.compute.model;
 
 import java.io.Serializable;
 import java.util.List;
