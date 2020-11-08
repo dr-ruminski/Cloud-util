@@ -25,9 +25,11 @@ public abstract class Manager<T> implements VMManager<T> {
 
 	protected String execute(String command) throws IOException {
 
+		String fullCmd = buildCloudCommand(command);
+		LOG.info("Executing: {}", fullCmd);
+
 		// here we attempt to run gcloud command using os shell
-		Process gcloudProcess = Runtime.getRuntime().exec(buildCloudCommand(command));
-//		Process gcloudProcess = Runtime.getRuntime().exec(new String[] {"/bin/bash", "-c", "export"});
+		Process gcloudProcess = Runtime.getRuntime().exec(fullCmd);
 
 		// I/O of the gcloud * command
 		BufferedReader stdOutput = new BufferedReader(new InputStreamReader(gcloudProcess.getInputStream()));

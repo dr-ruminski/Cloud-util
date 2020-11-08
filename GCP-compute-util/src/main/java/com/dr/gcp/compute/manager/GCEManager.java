@@ -13,6 +13,8 @@ import org.apache.logging.log4j.Logger;
 import com.dr.cloud.manager.Manager;
 import com.dr.gcp.compute.model.GCPComputeVModel;
 import com.google.gson.Gson;
+import static com.dr.gcp.compute.manager.GcloudCommands.*;
+
 
 /**
  * The manager for Google Compute Engine instances. Retrieves info about virtual
@@ -38,7 +40,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		LOG.debug("Virtual Machine Manager has started. Retrieving GCE instances data.");
 
 		try {
-			String jsonStr = execute(GcloudCommands.LIST_INSTANCES);
+			String jsonStr = execute(LIST_INSTANCES);
 			Gson gson = new Gson();
 			GCPComputeVModel[] model = gson.fromJson(jsonStr.toString(), GCPComputeVModel[].class);
 			List<GCPComputeVModel> list = Arrays.asList(model);
@@ -68,10 +70,9 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		LOG.info("Starting: {}", name);
 
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(GcloudCommands.START_INSTANCE).append(name).append(" --zone=").append(vm.getZone())
+		cmd.append(START_INSTANCE).append(name).append(" --zone=").append(vm.getZone())
 				.append(" --format=json");
 
-		LOG.debug("Executing: {}", cmd);
 		String jsonResponse = execute(cmd.toString());
 
 		LOG.trace("Running machine json: {}", jsonResponse);
@@ -88,7 +89,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 			return;
 		}
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(GcloudCommands.STOP_INSTANCE).append(name).append(" --zone=").append(currentVM.getZone());
+		cmd.append(STOP_INSTANCE).append(name).append(" --zone=").append(currentVM.getZone());
 
 		execute(cmd.toString());
 
@@ -119,10 +120,9 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		LOG.info("Starting: {}", vm.getName());
 
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(GcloudCommands.START_INSTANCE).append(vm.getName()).append(" --zone=").append(vm.getZone())
+		cmd.append(START_INSTANCE).append(vm.getName()).append(" --zone=").append(vm.getZone())
 				.append(" --format=json");
 
-		LOG.debug("Executing: {}", cmd);
 		String jsonResponse = execute(cmd.toString());
 
 		LOG.trace("Running machine json: {}", jsonResponse);
