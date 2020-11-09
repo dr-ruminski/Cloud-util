@@ -84,12 +84,13 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 
 	@Override
 	public void stopInstance(String name) throws IOException {
-		if (name == null || name.isEmpty()) {
-			LOG.error("A name of vm cannot be null or empty. Cannot stop vm with the following name: {}", name);
+		if (name == null || name.isEmpty() || !vmsMap.keySet().contains(name)) {
+			LOG.error("There is a problem with the VM called {}. Cannot stop vm with the following name: {}", name, name);
 			return;
 		}
+		GCPComputeVModel vm = vmsMap.get(name).get(0);
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(STOP_INSTANCE).append(name).append(" --zone=").append(currentVM.getZone());
+		cmd.append(STOP_INSTANCE).append(name).append(" --zone=").append(vm.getZone());
 
 		execute(cmd.toString());
 
