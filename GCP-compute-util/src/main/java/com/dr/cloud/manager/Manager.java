@@ -37,7 +37,7 @@ public abstract class Manager<T> implements VMManager<T> {
 
 		StringBuilder processOutMsg = readProcessIOStream(stdOutput);
 		if (processOutMsg.length() > 0)
-			LOG.debug(processOutMsg);
+			LOG.trace(processOutMsg);
 
 		StringBuilder processErrOutMsg = readProcessIOStream(stdErrorOutput);
 		if (processErrOutMsg.length() > 0)
