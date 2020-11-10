@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,4 +75,9 @@ public abstract class Manager<T> implements VMManager<T> {
 	public T getCurrentVM() {
 		return currentVM;
 	}
+	
+	public Set<String> getAllVmNames() {
+		Set<String> copy = vmsMap.keySet().stream().collect(Collectors.toSet());
+		return copy;
+	}	
 }
