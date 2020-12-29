@@ -1,5 +1,9 @@
 package com.dr.gcp.compute.manager;
 
+import static com.dr.gcp.compute.manager.GcloudCommands.LIST_INSTANCES;
+import static com.dr.gcp.compute.manager.GcloudCommands.START_INSTANCE;
+import static com.dr.gcp.compute.manager.GcloudCommands.STOP_INSTANCE;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,7 +17,6 @@ import org.apache.logging.log4j.Logger;
 import com.dr.cloud.manager.Manager;
 import com.dr.gcp.compute.model.GCPComputeVModel;
 import com.google.gson.Gson;
-import static com.dr.gcp.compute.manager.GcloudCommands.*;
 
 
 /**
@@ -142,7 +145,6 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 	public void stopRandomInstance() throws IOException {
 		stopInstance(currentVM.getName());
 	}
-
 
 
 }
