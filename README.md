@@ -47,7 +47,7 @@ VMManager<GCPComputeVModel> vmManager = new GCEManager();
 vmManager.startRandomInstance();
 ```
 
-You don't need randomization you can pass the name of virtual machine.
+If you don't need randomization you can pass the name of virtual machine as presented:
 ```
 vmManager.startInstance("ubuntu-las-vegas-c");
 ```
