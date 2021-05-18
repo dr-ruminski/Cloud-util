@@ -59,5 +59,14 @@ public interface VMManager<T> {
 	 * @throws IOException - thrown in case when a problem with a virtual machine exists on the cloud side
 	 */
 	void stopRandomInstance() throws IOException;
+	
+	/**
+	 * ping 
+	 * 
+	 * @param name
+	 * @throws IOException
+	 */
+	void deleteInstance(String name) throws IOException;
+
 
 }

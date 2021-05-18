@@ -87,10 +87,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 
 	@Override
 	public void stopInstance(String name) throws IOException {
-		if (name == null || name.isEmpty() || !vmsMap.keySet().contains(name)) {
-			LOG.error("There is a problem with the VM called {}. Cannot stop vm with the following name: {}", name, name);
-			return;
-		}
+		evaluateInstanceName(name);
 		GCPComputeVModel vm = vmsMap.get(name).get(0);
 		StringBuilder cmd = new StringBuilder();
 		cmd.append(STOP_INSTANCE).append(name).append(" --zone=").append(vm.getZone());
@@ -98,7 +95,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		execute(cmd.toString());
 
 	}
-
+	
 	@Override
 	public void startAllInstance() throws IOException {
 		for (String vmName : vmsMap.keySet())
@@ -124,7 +121,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		LOG.info("Starting: {}", vm.getName());
 
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(START_INSTANCE).append(vm.getName()).append(" --zone=").append(vm.getZone())
+		cmd.append(START_INSTANCE).append(vm.getName()).append(" --zone=" ).append(vm.getZone())
 				.append(" --format=json");
 
 		String jsonResponse = execute(cmd.toString());
@@ -144,6 +141,23 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 	@Override
 	public void stopRandomInstance() throws IOException {
 		stopInstance(currentVM.getName());
+	}
+
+	@Override
+	public void deleteInstance(String name) throws IOException {
+		evaluateInstanceName(name);
+		GCPComputeVModel vm = vmsMap.get(name).get(0);
+		StringBuilder cmd = new StringBuilder();
+		cmd.append(GcloudCommands.DELETE_INSTANCE).append(name).append(" --zone ").append(vm.getZone()).append('&');
+		execute(cmd.toString());
+		LOG.info("Deleted the {} instance", name);
+	}	
+	
+	private void evaluateInstanceName(String name) {
+		if (name == null || name.isEmpty() || !vmsMap.keySet().contains(name)) {
+			LOG.error("There is a problem with the VM called {}. Cannot stop vm with the following name: {}", name, name);
+			return;
+		}
 	}
 
 
