@@ -1,9 +1,12 @@
 package com.dr.cloud.manager;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,30 @@ public abstract class Manager<T> implements VMManager<T> {
 		String fullCmd = buildCloudCommand(command);
 		LOG.info("Executing: {}", fullCmd);
 
+		StringBuilder processOutMsg = executeInTerminal(fullCmd);
+
+		return processOutMsg.toString();
+	}
+	
+	protected String execute(String command, String... preCommands) throws IOException {
+		
+		StringBuilder fullCmdWithPipes = new StringBuilder();
+		for (String cmd : preCommands) 
+			fullCmdWithPipes.append(cmd).append(" | ");
+			
+		// appends gcp command
+		fullCmdWithPipes.append(buildCloudCommand(command));
+		
+
+		fullCmdWithPipes.insert(0, "#!/bin/bash \n");
+		Writer output = new BufferedWriter(new FileWriter("/tmp/deleteVM.sh"));
+	    output.write(fullCmdWithPipes.toString());
+	    output.close();
+	    executeInTerminal("chmod u+x /tmp/deleteVM.sh");
+		return executeInTerminal("/tmp/deleteVM.sh").toString();
+	}
+
+	private StringBuilder executeInTerminal(String fullCmd) throws IOException {
 		// here we attempt to run gcloud command using os shell
 		Process gcloudProcess = Runtime.getRuntime().exec(fullCmd);
 
@@ -49,10 +76,19 @@ public abstract class Manager<T> implements VMManager<T> {
 		stdOutput.close();
 		stdErrorOutput.close();
 		gcloudProcess.destroy();
-
-		return processOutMsg.toString();
+		return processOutMsg;
 	}
 
+	@Override
+	public T getCurrentVM() {
+		return currentVM;
+	}
+	
+	public Set<String> getAllVmNames() {
+		Set<String> copy = vmsMap.keySet().stream().collect(Collectors.toSet());
+		return copy;
+	}	
+	
 	private String buildCloudCommand(String command) {
 		StringBuilder cloudCmd = new StringBuilder();
 		cloudCmd
@@ -69,15 +105,5 @@ public abstract class Manager<T> implements VMManager<T> {
 			outputMessage.append(output).append('\n');
 
 		return outputMessage;
-	}
-
-	@Override
-	public T getCurrentVM() {
-		return currentVM;
-	}
-	
-	public Set<String> getAllVmNames() {
-		Set<String> copy = vmsMap.keySet().stream().collect(Collectors.toSet());
-		return copy;
 	}	
 }
