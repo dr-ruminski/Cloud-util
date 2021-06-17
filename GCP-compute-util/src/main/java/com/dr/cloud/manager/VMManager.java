@@ -33,7 +33,6 @@ public interface VMManager<T> {
 	 */
 	void deleteInstance(String name) throws IOException;
 	
-		
 	
 	/*
 	 * Gets current (lastly selected) virtual machine.
