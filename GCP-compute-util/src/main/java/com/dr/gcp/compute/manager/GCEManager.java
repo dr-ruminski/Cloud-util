@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,18 +20,19 @@ import com.dr.cloud.manager.Manager;
 import com.dr.gcp.compute.model.GCPComputeVModel;
 import com.google.gson.Gson;
 
-
 /**
  * The manager for Google Compute Engine instances. Retrieves info about virtual
  * machines. Fills up data of the main data model of GCP compute machines. It
- * provides the following functions that support managing vms:
+ * provides the following operations that support managing vms:
  * <ul>
+ * <li>create a GCE instance</li>
+ * <li>delete a GCE instance</li>
  * <li>start a GCE instance by providing a name of vm,</li>
  * <li>stop a GCE instance by providing a name of vm,</li>
  * <li>start all GCE instances,</li>
  * <li>stop all GCE instances,</li>
  * <li>start randomly selected a GCE instance,</li>
- * <li>stop randomly selected a GCE instance.</li>
+ * <li>stop a GCE instance that was randomly started.</li>
  * </ul>
  * 
  * @author Dariusz Rumiński
@@ -44,10 +47,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 
 		try {
 			String jsonStr = execute(LIST_INSTANCES);
-			Gson gson = new Gson();
-			GCPComputeVModel[] model = gson.fromJson(jsonStr.toString(), GCPComputeVModel[].class);
-			List<GCPComputeVModel> list = Arrays.asList(model);
-			vmsMap = list.stream().collect(Collectors.groupingBy(GCPComputeVModel::getName));
+			json2model(jsonStr);
 
 		} catch (IOException e) {
 			LOG.error(e);
@@ -55,6 +55,36 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 			System.exit(-1);
 		}
 	}
+	
+	@Override
+	public void createInstance(String name, Map<String, String> params) throws IOException {
+
+		if (params == null)
+			params = new HashMap<String, String>();
+		
+		// always force a result to be returned as a json type
+		params.put("--format", "json");
+		
+		StringBuilder cmd = new StringBuilder();
+		cmd.append(GcloudCommands.CREATE_INSTANCE).append(name);
+		params.forEach((k, v) -> cmd.append(' ').append(k).append(' ').append(v));
+		
+		String jsonResponse = execute(cmd.toString());
+		LOG.trace("Returned json: \n{}", jsonResponse);
+
+		currentVM = json2model(jsonResponse);
+		LOG.info("Created the {} instance; zone = {}", name, params.get("--zone"));
+	}	
+	
+	@Override
+	public void deleteInstance(String name) throws IOException {
+		evaluateInstanceName(name);
+		GCPComputeVModel vm = currentVM;
+		StringBuilder cmd = new StringBuilder();
+		cmd.append(GcloudCommands.DELETE_INSTANCE).append(name).append(" --zone ").append(vm.getZone());//.append('&');
+		execute(cmd.toString(), "printf y\\n");
+		LOG.info("Deleted the {} instance", name);
+	}	
 
 	@Override
 	public void startInstance(String name) throws IOException {
@@ -73,29 +103,26 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		LOG.info("Starting: {}", name);
 
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(START_INSTANCE).append(name).append(" --zone=").append(vm.getZone())
-				.append(" --format=json");
+		cmd.append(START_INSTANCE).append(name).append(" --zone=").append(vm.getZone()).append(" --format=json");
 
 		String jsonResponse = execute(cmd.toString());
 
-		LOG.trace("Running machine json: {}", jsonResponse);
-		Gson gson = new Gson();
-		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
+		LOG.trace("Returned json: \n{}", jsonResponse);
 
-		currentVM = model[0];
+		currentVM = json2model(jsonResponse);
 	}
 
 	@Override
 	public void stopInstance(String name) throws IOException {
 		evaluateInstanceName(name);
-		GCPComputeVModel vm = vmsMap.get(name).get(0);
+		GCPComputeVModel vm = vmsMap.get(name).get(0); 
 		StringBuilder cmd = new StringBuilder();
 		cmd.append(STOP_INSTANCE).append(name).append(" --zone=").append(vm.getZone());
 
 		execute(cmd.toString());
 
 	}
-	
+
 	@Override
 	public void startAllInstance() throws IOException {
 		for (String vmName : vmsMap.keySet())
@@ -114,24 +141,22 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 			return;
 
 		List<List<GCPComputeVModel>> listOfVms = new ArrayList<>(vmsMap.values());
-		Collections.shuffle( listOfVms );
-		
+		Collections.shuffle(listOfVms);
+
 		GCPComputeVModel vm = listOfVms.get(0).get(0);
 
 		LOG.info("Starting: {}", vm.getName());
 
 		StringBuilder cmd = new StringBuilder();
-		cmd.append(START_INSTANCE).append(vm.getName()).append(" --zone=" ).append(vm.getZone())
+		cmd.append(START_INSTANCE).append(vm.getName()).append(" --zone=").append(vm.getZone())
 				.append(" --format=json");
 
 		String jsonResponse = execute(cmd.toString());
 
-		LOG.trace("Running machine json: {}", jsonResponse);
-		Gson gson = new Gson();
-		GCPComputeVModel[] model = gson.fromJson(jsonResponse, GCPComputeVModel[].class);
+		LOG.trace("Returned json: \n{}", jsonResponse);
 
-		currentVM = model[0];
-		
+		currentVM = json2model(jsonResponse);
+
 		// updates map with new data
 		vmsMap.remove(currentVM.getName());
 		vmsMap.put(currentVM.getName(), Arrays.asList(currentVM));
@@ -142,23 +167,31 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 	public void stopRandomInstance() throws IOException {
 		stopInstance(currentVM.getName());
 	}
-
-	@Override
-	public void deleteInstance(String name) throws IOException {
-		evaluateInstanceName(name);
-		GCPComputeVModel vm = vmsMap.get(name).get(0);
-		StringBuilder cmd = new StringBuilder();
-		cmd.append(GcloudCommands.DELETE_INSTANCE).append(name).append(" --zone ").append(vm.getZone()).append('&');
-		execute(cmd.toString());
-		LOG.info("Deleted the {} instance", name);
-	}	
 	
+	@Override
+	public void resetInstance(String name) throws IOException {
+		// TODO Auto-generated method stub
+
+	}	
+
 	private void evaluateInstanceName(String name) {
 		if (name == null || name.isEmpty() || !vmsMap.keySet().contains(name)) {
-			LOG.error("There is a problem with the VM called {}. Cannot stop vm with the following name: {}", name, name);
+			LOG.error("There is a problem with the VM called {}. Cannot stop vm with the following name: {}", name,
+					name);
 			return;
 		}
 	}
 
-
+	private GCPComputeVModel json2model(String jsonStr) {
+		Gson gson = new Gson();
+		GCPComputeVModel[] model = gson.fromJson(jsonStr.toString(), GCPComputeVModel[].class);
+		List<GCPComputeVModel> list = Arrays.asList(model);
+		Map<String, List<GCPComputeVModel>> map = list.stream().collect(Collectors.groupingBy(GCPComputeVModel::getName));
+		
+		// always add map of gcp model independently when using startInstance or createInstance
+		vmsMap.putAll(map);
+		
+		return model[0];
+	
+	}
 }
