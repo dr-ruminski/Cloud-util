@@ -1,6 +1,7 @@
 package com.dr.cloud.manager;
 
 import java.io.IOException;
+import java.util.Map;
 
 import com.dr.gcp.compute.manager.GCEManager;
 
@@ -15,6 +16,25 @@ import com.dr.gcp.compute.manager.GCEManager;
  */
 public interface VMManager<T> {
 
+	/**
+	 * 
+	 * TODO: add comment
+	 * 
+	 * @param name
+	 * @param params
+	 * @throws IOException
+	 */
+	void createInstance(String name, Map<String, String> params) throws IOException;
+	
+	/**
+	 * 
+	 * @param name
+	 * @throws IOException
+	 */
+	void deleteInstance(String name) throws IOException;
+	
+		
+	
 	/*
 	 * Gets current (lastly selected) virtual machine.
 	 */
@@ -60,13 +80,7 @@ public interface VMManager<T> {
 	 */
 	void stopRandomInstance() throws IOException;
 	
-	/**
-	 * ping 
-	 * 
-	 * @param name
-	 * @throws IOException
-	 */
-	void deleteInstance(String name) throws IOException;
+	void resetInstance(String name) throws IOException;
 
 
 }
