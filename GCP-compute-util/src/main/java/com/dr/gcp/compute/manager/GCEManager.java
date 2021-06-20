@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -72,7 +73,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		String jsonResponse = execute(cmd.toString());
 		LOG.trace("Returned json: \n{}", jsonResponse);
 
-		currentVM = json2model(jsonResponse);
+		currentVM = json2model(jsonResponse).get();
 		LOG.info("Created the {} instance; zone = {}", name, params.get("--zone"));
 	}	
 	
@@ -109,7 +110,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 
 		LOG.trace("Returned json: \n{}", jsonResponse);
 
-		currentVM = json2model(jsonResponse);
+		currentVM = json2model(jsonResponse).get();
 	}
 
 	@Override
@@ -155,7 +156,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 
 		LOG.trace("Returned json: \n{}", jsonResponse);
 
-		currentVM = json2model(jsonResponse);
+		currentVM = json2model(jsonResponse).get();
 
 		// updates map with new data
 		vmsMap.remove(currentVM.getName());
@@ -182,7 +183,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		}
 	}
 
-	private GCPComputeVModel json2model(String jsonStr) {
+	private Optional<GCPComputeVModel> json2model(String jsonStr) {
 		Gson gson = new Gson();
 		GCPComputeVModel[] model = gson.fromJson(jsonStr.toString(), GCPComputeVModel[].class);
 		List<GCPComputeVModel> list = Arrays.asList(model);
@@ -191,7 +192,7 @@ public class GCEManager extends Manager<GCPComputeVModel> {
 		// always add map of gcp model independently when using startInstance or createInstance
 		vmsMap.putAll(map);
 		
-		return model[0];
-	
+		// when there are no vms an array of GCPComputeVModel is empty
+		return Optional.ofNullable(model.length == 0 ? null : model[0]);
 	}
 }
